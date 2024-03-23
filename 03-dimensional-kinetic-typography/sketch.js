@@ -7,8 +7,8 @@ let boxes = [];
 let font;
 let msg = "A";
 let points = [];
-let fontX = -155;
-let fontY = 135;
+let fontX = -135;
+let fontY = 155;
 let fontSize = 400;
 
 function preload() {
@@ -39,7 +39,6 @@ function draw() {
   background(145, 200, 200);
 
   let distance;
-
   for (let i = 0; i < cols; i++) {
     for (let j = 0; j < rows; j++) {
       for (let k = 0; k < points.length; k++) {
