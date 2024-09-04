@@ -15,11 +15,26 @@ function setup() {
   ambientSound.play();
 
   for (let i = 0; i < numLines; i++) {
+    let x1 = random(width);
+    let y1 = random(height);
+    let x2 = random(width);
+    let y2 = random(height);
+
     lines.push({
-      x1: random(width),
-      y1: random(height),
-      x2: random(width),
-      y2: random(height),
+      x1: x1,
+      y1: y1,
+      x2: x2,
+      y2: y2,
+      opacity: random(255),
+      fadeSpeed: random(0.5, 2),
+      color: copperColor,
+    });
+
+    lines.push({
+      x1: width - x1,
+      y1: height - y1,
+      x2: width - x2,
+      y2: height - y2,
       opacity: random(255),
       fadeSpeed: random(0.5, 2),
       color: copperColor,
@@ -109,4 +124,6 @@ function applyCanvasGlitch() {
     }
   }
   updatePixels();
+
+  filter(BLUR, glitchIntensity * 3);
 }
