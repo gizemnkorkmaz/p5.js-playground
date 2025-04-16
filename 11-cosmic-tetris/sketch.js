@@ -15,7 +15,8 @@ let gameOver = false;
 let screenShake = 0;
 let countdown = 3;
 
-let pixelFont = {
+// Pixel font data for numbers 0-9
+const pixelNumbers = {
   0: [
     [1, 1, 1],
     [1, 0, 1],
@@ -86,6 +87,10 @@ let pixelFont = {
     [0, 0, 1],
     [1, 1, 1],
   ],
+};
+
+// Pixel font data for letters
+const pixelLetters = {
   C: [
     [1, 1, 1],
     [1, 0, 0],
@@ -108,11 +113,11 @@ let pixelFont = {
     [1, 1, 1],
   ],
   M: [
-    [1, 0, 0, 0, 1],
-    [1, 1, 0, 1, 1],
-    [1, 0, 1, 0, 1],
-    [1, 0, 0, 0, 1],
-    [1, 0, 0, 0, 1],
+    [1, 0, 1],
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 0, 1],
   ],
   I: [
     [1, 1, 1],
@@ -142,12 +147,56 @@ let pixelFont = {
     [1, 0, 0],
     [1, 1, 1],
   ],
+  N: [
+    [1, 0, 1],
+    [1, 1, 1],
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+  ],
+  X: [
+    [1, 0, 1],
+    [0, 1, 0],
+    [0, 1, 0],
+    [0, 1, 0],
+    [1, 0, 1],
+  ],
 };
+
+function drawPixelText(text, x, y, size, color) {
+  push();
+  translate(x, y);
+  fill(color);
+  noStroke();
+
+  let currentX = 0;
+  for (let char of text.toUpperCase()) {
+    let pixelData;
+    if (char >= "0" && char <= "9") {
+      pixelData = pixelNumbers[char];
+    } else {
+      pixelData = pixelLetters[char];
+    }
+
+    if (pixelData) {
+      for (let row = 0; row < pixelData.length; row++) {
+        for (let col = 0; col < pixelData[row].length; col++) {
+          if (pixelData[row][col] === 1) {
+            rect(currentX + col * size, row * size, size, size);
+          }
+        }
+      }
+      currentX += (pixelData[0].length + 1) * size;
+    }
+  }
+  pop();
+}
 
 function setup() {
   let canvas = createCanvas(600, 400, WEBGL);
   canvas.position((windowWidth - width) / 2, (windowHeight - height) / 2);
 
+  // Initialize grid
   for (let i = 0; i < gridWidth; i++) {
     grid[i] = [];
     for (let j = 0; j < gridHeight; j++) {
@@ -155,22 +204,25 @@ function setup() {
     }
   }
 
+  // Create stars with colors
   for (let i = 0; i < numStars; i++) {
-    let isColored = random() < 0.3;
+    // Randomly choose between white and colored stars
+    let isColored = random() < 0.3; // 30% chance of being colored
     let starColor;
     if (isColored) {
+      // Choose from pastel colors
       let colors = [
-        color(255, 182, 193),
-        color(144, 238, 144),
-        color(173, 216, 230),
-        color(255, 255, 153),
-        color(221, 160, 221),
-        color(175, 238, 238),
-        color(255, 218, 185),
+        color(255, 182, 193), // Pastel Pink
+        color(144, 238, 144), // Pastel Green
+        color(173, 216, 230), // Pastel Blue
+        color(255, 255, 153), // Pastel Yellow
+        color(221, 160, 221), // Pastel Purple
+        color(175, 238, 238), // Pastel Cyan
+        color(255, 218, 185), // Pastel Orange
       ];
       starColor = random(colors);
     } else {
-      starColor = color(255);
+      starColor = color(255); // White
     }
 
     stars.push({
@@ -185,12 +237,94 @@ function setup() {
     });
   }
 
+  // Create first next piece
   nextPiece = createRandomPiece();
+}
+
+function createRandomPiece() {
+  const types = ["I", "O", "T", "L", "J", "S", "Z"];
+  const colors = [
+    color(255, 182, 193), // Pastel Pink
+    color(144, 238, 144), // Pastel Green
+    color(173, 216, 230), // Pastel Blue
+    color(255, 255, 153), // Pastel Yellow
+    color(221, 160, 221), // Pastel Purple
+    color(175, 238, 238), // Pastel Cyan
+    color(255, 218, 185), // Pastel Orange
+  ];
+
+  return {
+    type: random(types),
+    color: random(colors),
+  };
+}
+
+function checkLines() {
+  let linesToClear = [];
+  for (let j = gridHeight - 1; j >= 0; j--) {
+    let lineFull = true;
+    for (let i = 0; i < gridWidth; i++) {
+      if (grid[i][j] === null) {
+        lineFull = false;
+        break;
+      }
+    }
+    if (lineFull) {
+      linesToClear.push(j);
+    }
+  }
+
+  if (linesToClear.length > 0) {
+    // Add points based on number of lines cleared
+    score += linesToClear.length * 100;
+    linesCleared += linesToClear.length;
+
+    // Create line clear particles
+    for (let y of linesToClear) {
+      for (let x = 0; x < gridWidth; x++) {
+        if (grid[x][y]) {
+          createLineClearParticles(
+            x * gridSize - width / 2,
+            y * gridSize - height / 2,
+            grid[x][y].color
+          );
+        }
+      }
+    }
+
+    // Remove lines and shift down
+    for (let y of linesToClear) {
+      for (let j = y; j > 0; j--) {
+        for (let i = 0; i < gridWidth; i++) {
+          grid[i][j] = grid[i][j - 1];
+        }
+      }
+      for (let i = 0; i < gridWidth; i++) {
+        grid[i][0] = null;
+      }
+    }
+
+    // Add screen shake effect
+    screenShake = 10;
+  }
+}
+
+function createLineClearParticles(x, y, color) {
+  for (let i = 0; i < 20; i++) {
+    particles.push({
+      pos: createVector(x, y, 0),
+      vel: p5.Vector.random3D().mult(random(3, 7)),
+      size: random(1, 2),
+      life: 255,
+      color: [red(color), green(color), blue(color)],
+    });
+  }
 }
 
 function draw() {
   background(0);
 
+  // Apply screen shake
   if (screenShake > 0) {
     translate(
       random(-screenShake, screenShake),
@@ -199,6 +333,7 @@ function draw() {
     screenShake -= 0.5;
   }
 
+  // Draw title in top-left corner with  colors
   drawPixelText(
     "COSMIC",
     -width / 2 + 20,
@@ -214,6 +349,7 @@ function draw() {
     color(173, 216, 230, 200)
   );
 
+  // Draw score in top-right corner with  colors
   drawPixelText(
     "SCORE",
     width / 2 - 100,
@@ -229,6 +365,7 @@ function draw() {
     color(255, 255, 153, 200)
   );
 
+  // Draw next piece preview with  colors
   drawPixelText(
     "NEXT",
     width / 2 - 100,
@@ -272,12 +409,14 @@ function draw() {
     pop();
   }
 
+  // Draw bottom line with  color
   push();
   stroke(255, 182, 193, 100);
   strokeWeight(2);
   line(-width / 2, height / 2 - gridSize, width / 2, height / 2 - gridSize);
   pop();
 
+  // Draw stars with colors and softer twinkling
   for (let star of stars) {
     star.z += star.speed;
     if (star.z > 300) {
@@ -294,8 +433,10 @@ function draw() {
     push();
     translate(star.x, star.y, star.z);
     if (star.color === color(255)) {
+      // White stars
       fill(255, brightness);
     } else {
+      // Colored stars
       let r = red(star.color);
       let g = green(star.color);
       let b = blue(star.color);
@@ -306,7 +447,9 @@ function draw() {
     pop();
   }
 
+  // Check if game has started
   if (countdown > 0) {
+    // Draw countdown
     push();
     fill(255);
     textSize(64);
@@ -314,12 +457,14 @@ function draw() {
     text(countdown.toString(), 0, 0);
     pop();
 
+    // Update countdown
     if (frameCount % 60 === 0) {
       countdown--;
     }
     return;
   }
 
+  // Create new tetris piece periodically
   if (millis() - lastPieceTime > pieceInterval && !gameOver) {
     tetrisPieces.push({
       type: nextPiece.type,
@@ -333,6 +478,7 @@ function draw() {
     lastPieceTime = millis();
   }
 
+  // Update and draw tetris pieces with rounded corners
   for (let i = tetrisPieces.length - 1; i >= 0; i--) {
     let piece = tetrisPieces[i];
 
@@ -359,6 +505,7 @@ function draw() {
     fill(piece.color);
     noStroke();
 
+    // Draw pieces with rounded corners
     let cornerRadius = 3;
     switch (piece.type) {
       case "I":
@@ -392,6 +539,7 @@ function draw() {
     pop();
   }
 
+  // Update and draw particles with enhanced effects
   for (let i = particles.length - 1; i >= 0; i--) {
     let p = particles[i];
     p.pos.add(p.vel);
@@ -409,8 +557,10 @@ function draw() {
     }
   }
 
+  // Draw stacked pieces from grid
   drawGrid();
 
+  // Draw game over screen with  colors
   if (gameOver) {
     push();
     fill(0, 0, 0, 200);
@@ -429,186 +579,86 @@ function draw() {
   }
 }
 
-function createRandomPiece() {
-  let types = ["I", "O", "T", "L", "J", "S", "Z"];
-  let type = random(types);
-  let colors = [
-    color(255, 182, 193),
-    color(144, 238, 144),
-    color(173, 216, 230),
-    color(255, 255, 153),
-    color(221, 160, 221),
-    color(175, 238, 238),
-    color(255, 218, 185),
-  ];
-  return {
-    type: type,
-    color: random(colors),
-  };
+function createLandingParticles(piece) {
+  for (let i = 0; i < 15; i++) {
+    particles.push({
+      pos: createVector(piece.x, piece.y, 0),
+      vel: p5.Vector.random3D().mult(random(1, 3)),
+      size: random(1, 2),
+      life: 255,
+      color: [red(piece.color), green(piece.color), blue(piece.color)],
+    });
+  }
 }
 
 function canMoveDown(piece) {
-  let pieceGrid = getPieceGrid(piece);
-  for (let i = 0; i < pieceGrid.length; i++) {
-    for (let j = 0; j < pieceGrid[i].length; j++) {
-      if (pieceGrid[i][j]) {
-        let gridX = floor((piece.x + i * gridSize - width / 2) / gridSize);
-        let gridY = floor((piece.y + j * gridSize - height / 2) / gridSize) + 1;
-        if (
-          gridY >= gridHeight ||
-          gridX < 0 ||
-          gridX >= gridWidth ||
-          (grid[gridX] && grid[gridX][gridY])
-        ) {
+  // Convert piece position to grid coordinates
+  let gridX = floor((piece.x + width / 2) / gridSize);
+  let gridY = floor((piece.y + height / 2) / gridSize);
+
+  // Check if piece would hit bottom or other pieces
+  if (gridY >= gridHeight - 1) return false;
+
+  // Check collision with other pieces in grid
+  for (let i = 0; i < gridWidth; i++) {
+    for (let j = 0; j < gridHeight; j++) {
+      if (grid[i][j] !== null) {
+        if (abs(gridX - i) < 2 && abs(gridY + 1 - j) < 2) {
           return false;
         }
       }
     }
   }
+
   return true;
 }
 
 function addToGrid(piece) {
-  let pieceGrid = getPieceGrid(piece);
-  for (let i = 0; i < pieceGrid.length; i++) {
-    for (let j = 0; j < pieceGrid[i].length; j++) {
-      if (pieceGrid[i][j]) {
-        let gridX = floor((piece.x + i * gridSize - width / 2) / gridSize);
-        let gridY = floor((piece.y + j * gridSize - height / 2) / gridSize);
-        if (
-          gridX >= 0 &&
-          gridX < gridWidth &&
-          gridY >= 0 &&
-          gridY < gridHeight
-        ) {
-          grid[gridX][gridY] = {
-            type: piece.type,
-            color: piece.color,
-          };
-        }
-      }
-    }
-  }
-}
+  let gridX = floor((piece.x + width / 2) / gridSize);
+  let gridY = floor((piece.y + height / 2) / gridSize);
 
-function getPieceGrid(piece) {
-  let grid = [];
-  switch (piece.type) {
-    case "I":
-      grid = [[1, 1, 1, 1]];
-      break;
-    case "O":
-      grid = [
-        [1, 1],
-        [1, 1],
-      ];
-      break;
-    case "T":
-      grid = [
-        [1, 1, 1],
-        [0, 1, 0],
-      ];
-      break;
-    case "L":
-      grid = [
-        [1, 0],
-        [1, 0],
-        [1, 1],
-      ];
-      break;
-    case "J":
-      grid = [
-        [0, 1],
-        [0, 1],
-        [1, 1],
-      ];
-      break;
-    case "S":
-      grid = [
-        [0, 1, 1],
-        [1, 1, 0],
-      ];
-      break;
-    case "Z":
-      grid = [
-        [1, 1, 0],
-        [0, 1, 1],
-      ];
-      break;
-  }
-  return grid;
-}
-
-function checkLines() {
-  let linesToClear = [];
-  for (let j = gridHeight - 1; j >= 0; j--) {
-    let lineFull = true;
-    for (let i = 0; i < gridWidth; i++) {
-      if (!grid[i][j]) {
-        lineFull = false;
-        break;
-      }
-    }
-    if (lineFull) {
-      linesToClear.push(j);
-    }
-  }
-
-  if (linesToClear.length > 0) {
-    for (let line of linesToClear) {
-      for (let j = line; j > 0; j--) {
-        for (let i = 0; i < gridWidth; i++) {
-          grid[i][j] = grid[i][j - 1];
-        }
-      }
-      for (let i = 0; i < gridWidth; i++) {
-        grid[i][0] = null;
-      }
-    }
-    score += linesToClear.length * 100;
-    linesCleared += linesToClear.length;
-    screenShake = 10;
+  if (gridX >= 0 && gridX < gridWidth && gridY >= 0 && gridY < gridHeight) {
+    grid[gridX][gridY] = piece;
   }
 }
 
 function drawGrid() {
   for (let i = 0; i < gridWidth; i++) {
     for (let j = 0; j < gridHeight; j++) {
-      if (grid[i][j]) {
+      if (grid[i][j] !== null) {
+        let piece = grid[i][j];
         push();
-        translate(
-          -width / 2 + i * gridSize + gridSize / 2,
-          -height / 2 + j * gridSize + gridSize / 2
-        );
-        fill(grid[i][j].color);
+        translate(i * gridSize - width / 2, j * gridSize - height / 2);
+        fill(piece.color);
         noStroke();
-        let cornerRadius = 3;
-        switch (grid[i][j].type) {
+
+        // Draw the specific tetris shape
+        switch (piece.type) {
           case "I":
-            rect(-22.5, -7.5, 45, 15, cornerRadius);
+            rect(-22.5, -7.5, 45, 15);
             break;
           case "O":
-            rect(-15, -15, 30, 30, cornerRadius);
+            rect(-15, -15, 30, 30);
             break;
           case "T":
-            rect(-15, -15, 30, 15, cornerRadius);
-            rect(0, 0, 10, 10, cornerRadius);
+            rect(-15, -15, 30, 15);
+            rect(0, 0, 15, 15);
             break;
           case "L":
-            rect(-15, -15, 15, 45, cornerRadius);
-            rect(0, 0, 15, 15, cornerRadius);
+            rect(-15, -15, 15, 45);
+            rect(0, 0, 15, 15);
             break;
           case "J":
-            rect(0, -15, 15, 45, cornerRadius);
-            rect(-10, 0, 15, 15, cornerRadius);
+            rect(0, -15, 15, 45);
+            rect(-15, 0, 15, 15);
             break;
           case "S":
-            rect(-15, -15, 30, 15, cornerRadius);
-            rect(0, 0, 30, 15, cornerRadius);
+            rect(-15, -15, 30, 15);
+            rect(0, 0, 30, 15);
             break;
           case "Z":
-            rect(0, -15, 30, 15, cornerRadius);
-            rect(-15, 0, 30, 15, cornerRadius);
+            rect(0, -15, 30, 15);
+            rect(-15, 0, 30, 15);
             break;
         }
         pop();
@@ -617,84 +667,27 @@ function drawGrid() {
   }
 }
 
-function createLandingParticles(piece) {
-  let pieceGrid = getPieceGrid(piece);
-  for (let i = 0; i < pieceGrid.length; i++) {
-    for (let j = 0; j < pieceGrid[i].length; j++) {
-      if (pieceGrid[i][j]) {
-        for (let k = 0; k < 15; k++) {
-          let angle = random(TWO_PI);
-          let speed = random(1, 3);
-          let size = random(1, 3);
-          particles.push({
-            pos: createVector(
-              piece.x + i * gridSize - width / 2,
-              piece.y + j * gridSize - height / 2,
-              random(-20, 20)
-            ),
-            vel: createVector(
-              cos(angle) * speed,
-              sin(angle) * speed,
-              random(-1, 1)
-            ),
-            size: size,
-            color: [red(piece.color), green(piece.color), blue(piece.color)],
-            life: 255,
-          });
-        }
-      }
-    }
-  }
-}
-
-function drawPixelText(text, x, y, scale, col) {
-  push();
-  translate(x, y);
-  fill(col);
-  noStroke();
-  let spacing = 4 * scale;
-  let charWidth = 3 * scale;
-  let charHeight = 5 * scale;
-
-  for (let i = 0; i < text.length; i++) {
-    let char = text[i].toUpperCase();
-    if (pixelFont[char]) {
-      for (let row = 0; row < pixelFont[char].length; row++) {
-        for (let col = 0; col < pixelFont[char][row].length; col++) {
-          if (pixelFont[char][row][col] === 1) {
-            rect(
-              i * (charWidth + spacing) + col * scale,
-              row * scale,
-              scale,
-              scale
-            );
-          }
-        }
-      }
-    }
-  }
-  pop();
-}
-
 function keyPressed() {
   if (key === "r" && gameOver) {
-    resetGame();
+    // Reset game
+    grid = [];
+    for (let i = 0; i < gridWidth; i++) {
+      grid[i] = [];
+      for (let j = 0; j < gridHeight; j++) {
+        grid[i][j] = null;
+      }
+    }
+    tetrisPieces = [];
+    particles = [];
+    score = 0;
+    linesCleared = 0;
+    pieceInterval = 1000;
+    gameOver = false;
+    countdown = 3;
+    nextPiece = createRandomPiece();
   }
 }
 
-function resetGame() {
-  grid = [];
-  for (let i = 0; i < gridWidth; i++) {
-    grid[i] = [];
-    for (let j = 0; j < gridHeight; j++) {
-      grid[i][j] = null;
-    }
-  }
-  tetrisPieces = [];
-  particles = [];
-  score = 0;
-  linesCleared = 0;
-  gameOver = false;
-  countdown = 3;
-  nextPiece = createRandomPiece();
-} 
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
