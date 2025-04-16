@@ -14,6 +14,8 @@ let nextPiece = null;
 let gameOver = false;
 let screenShake = 0;
 let countdown = 3;
+let progress = 0;
+let maxProgress = 100;
 
 // Pixel font data for numbers 0-9
 const pixelNumbers = {
@@ -409,11 +411,15 @@ function draw() {
     pop();
   }
 
-  // Draw bottom line with  color
+  // Draw progress bar at the bottom
   push();
-  stroke(255, 182, 193, 100);
-  strokeWeight(2);
-  line(-width / 2, height / 2 - gridSize, width / 2, height / 2 - gridSize);
+  noStroke();
+  // Background of progress bar
+  fill(50);
+  rect(-width / 2, height / 2 - 10, width, 10);
+  // Progress fill
+  fill(255, 182, 193); // Pastel pink color
+  rect(-width / 2, height / 2 - 10, width * (progress / maxProgress), 10);
   pop();
 
   // Draw stars with colors and softer twinkling
@@ -580,15 +586,37 @@ function draw() {
 }
 
 function createLandingParticles(piece) {
-  for (let i = 0; i < 15; i++) {
+  // Create fewer particles for a subtler effect
+  for (let i = 0; i < 20; i++) {
     particles.push({
       pos: createVector(piece.x, piece.y, 0),
-      vel: p5.Vector.random3D().mult(random(1, 3)),
+      vel: p5.Vector.random3D().mult(random(1, 2)),
       size: random(1, 2),
       life: 255,
       color: [red(piece.color), green(piece.color), blue(piece.color)],
     });
   }
+
+  // Create fewer fragments of the piece
+  let fragmentCount = 5;
+  let fragmentSize = 4;
+  for (let i = 0; i < fragmentCount; i++) {
+    let angle = random(TWO_PI);
+    let distance = random(5, 15);
+    let fragmentX = piece.x + cos(angle) * distance;
+    let fragmentY = piece.y + sin(angle) * distance;
+
+    particles.push({
+      pos: createVector(fragmentX, fragmentY, 0),
+      vel: createVector(cos(angle) * 2, sin(angle) * 2, random(-1, 1)),
+      size: fragmentSize,
+      life: 255,
+      color: [red(piece.color), green(piece.color), blue(piece.color)],
+    });
+  }
+
+  // Add smaller screen shake effect
+  screenShake = 5;
 }
 
 function canMoveDown(piece) {
@@ -619,6 +647,7 @@ function addToGrid(piece) {
 
   if (gridX >= 0 && gridX < gridWidth && gridY >= 0 && gridY < gridHeight) {
     grid[gridX][gridY] = piece;
+    progress = min(progress + 2, maxProgress);
   }
 }
 
@@ -685,6 +714,7 @@ function keyPressed() {
     gameOver = false;
     countdown = 3;
     nextPiece = createRandomPiece();
+    progress = 0;
   }
 }
 
