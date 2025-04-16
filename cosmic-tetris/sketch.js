@@ -7,30 +7,12 @@ let grid = [];
 let gridSize = 15;
 let gridWidth = 30;
 let gridHeight = 20;
-let shootingStars = [];
 let particles = [];
-let nebulas = [];
-let cosmicDust = [];
-let centralSphere = {
-  x: 0,
-  y: 0,
-  size: 100,
-  gravity: 0.5,
-};
-let aurora = {
-  bands: [],
-  colors: [],
-  layers: 4,
-  baseSpeed: 0.1,
-  waveIntensity: 40,
-  colorShiftSpeed: 0.001,
-};
 let score = 0;
 let linesCleared = 0;
 let nextPiece = null;
 let gameOver = false;
 let screenShake = 0;
-let gameStartTime = 0;
 let countdown = 3;
 
 // Pixel font data for numbers 0-9
@@ -252,32 +234,6 @@ function setup() {
       twinkle: random(0.5, 1.2),
       twinkleSpeed: random(0.01, 0.03),
       color: starColor,
-    });
-  }
-
-  // Create nebula clouds
-  for (let i = 0; i < 5; i++) {
-    nebulas.push({
-      x: random(-width / 2, width / 2),
-      y: random(-height / 2, height / 2),
-      z: random(-300, 300),
-      size: random(100, 200),
-      color: color(random(100, 255), random(100, 255), random(100, 255), 30),
-      rotation: random(TWO_PI),
-    });
-  }
-
-  // Create cosmic dust
-  for (let i = 0; i < 200; i++) {
-    cosmicDust.push({
-      pos: createVector(
-        random(-width / 2, width / 2),
-        random(-height / 2, height / 2),
-        random(-300, 300)
-      ),
-      vel: p5.Vector.random3D().mult(0.1),
-      size: random(0.5, 1.5),
-      color: color(255, 255, 255, random(50, 150)),
     });
   }
 
